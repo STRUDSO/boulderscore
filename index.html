@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Boulder Scorecard</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+    input { width: 40px; }
+    .totals { font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h2>Total Boulder Battle (Local)</h2>
+
+<table id="score">
+  <thead>
+    <tr>
+      <th>NR</th>
+      <th>F</th>
+      <th>FPZ</th>
+      <th>Zone</th>
+      <th>FPT</th>
+      <th>Top</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="totals">
+  Total FPZ: <span id="t-fpz">0</span> |
+  Total Z: <span id="t-z">0</span> |
+  Total FPT: <span id="t-fpt">0</span> |
+  Total T: <span id="t-t">0</span>
+</div>
+
+<script>
+  const ROWS = 15;
+  const key = "boulder-scorecard-v1";
+
+  // --- state ---
+  let data = JSON.parse(localStorage.getItem(key) || "null")
+             || Array.from({ length: ROWS }, () => ({
+                  F: "", FPZ: "", Z: false, FPT: "", T: false
+                }));
+
+  const tbody = document.querySelector("#score tbody");
+
+  // --- render rows ---
+  function render() {
+    tbody.innerHTML = "";
+    data.forEach((row, i) => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td><input data-i="${i}" data-k="F" value="${row.F}"></td>
+        <td><input data-i="${i}" data-k="FPZ" value="${row.FPZ}"></td>
+        <td><input type="checkbox" data-i="${i}" data-k="Z" ${row.Z ? "checked" : ""}></td>
+        <td><input data-i="${i}" data-k="FPT" value="${row.FPT}"></td>
+        <td><input type="checkbox" data-i="${i}" data-k="T" ${row.T ? "checked" : ""}></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    updateTotals();
+  }
+
+  // --- persist ---
+  function save() {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  // --- wiring updates ---
+  tbody.addEventListener("input", (e) => {
+    const i = e.target.dataset.i;
+    const k = e.target.dataset.k;
+    data[i][k] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    save();
+    updateTotals();
+  });
+
+  tbody.addEventListener("change", (e) => {
+    if (e.target.type === "checkbox") {
+      const i = e.target.dataset.i;
+      const k = e.target.dataset.k;
+      data[i][k] = e.target.checked;
+      save();
+      updateTotals();
+    }
+  });
+
+  // --- totals ---
+  function updateTotals() {
+    const fpz = data.reduce((a,r) => a + (parseInt(r.FPZ)||0), 0);
+    const z   = data.reduce((a,r) => a + (r.Z ? 1 : 0), 0);
+    const fpt = data.reduce((a,r) => a + (parseInt(r.FPT)||0), 0);
+    const t   = data.reduce((a,r) => a + (r.T ? 1 : 0), 0);
+
+    document.getElementById("t-fpz").textContent = fpz;
+    document.getElementById("t-z").textContent = z;
+    document.getElementById("t-fpt").textContent = fpt;
+    document.getElementById("t-t").textContent = t;
+  }
+
+  // --- init ---
+  render();
+</script>
+
+</body>
+</html>
